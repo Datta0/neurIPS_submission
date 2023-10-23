@@ -8,9 +8,8 @@ import uvicorn
 import torch
 from huggingface_hub import login
 from transformers import AutoTokenizer, AutoModelForCausalLM
-# from llama_recipes.inference.model_utils import load_peft_model
 from peft import PeftConfig
-from train import train_model
+
 torch.set_float32_matmul_precision("high")
 
 from api import (
@@ -20,15 +19,6 @@ from api import (
     TokenizeResponse,
     Token,
 )
-
-
-
-#### RUN TRAINING
-# os.system('python train.py 2>&1 | tee /home/datta0/python_train.log')
-if os.environ.get('TRAIN_NEUIPS_MODEL',False)==True:
-    trained = train_model()
-
-
 
 app = FastAPI()
 kwargs = {
@@ -40,15 +30,15 @@ logger = logging.getLogger(__name__)
 # Configure the logging module
 # logging.basicConfig(level=logging.INFO)
 
-login(token=os.environ.get("HUGGINGFACE_TOKEN",'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'))
+login(token='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')
 
 # base_model_name = os.environ.get("HUGGINGFACE_BASE_MODEL",'meta-llama/Llama-2-13b-hf')
 # adapter_name = os.environ.get("HUGGINGFACE_REPO",'Qwen/Qwen-14B')
 books_adapter = 'imdatta0/qwen-tiny-textbooks'
-# oasst_adapter = 'imdatta0/qwen-oasst'
-# qns_adapter = 'imdatta0/qwen-qns'
+jeopardy_adapter = 'imdatta0/jeopardy'
+dolly_adapter = 'imdatta0/qwen_databricks_dolly_15k_r16'
 
-books_config = PeftConfig.from_pretrained(books_adapter, trust_remote_code = True,)
+# books_config = PeftConfig.from_pretrained(books_adapter, trust_remote_code = True)
 # oasst_config = PeftConfig.from_pretrained(oasst_adapter, trust_remote_code = True)
 # qns_config = PeftConfig.from_pretrained(qns_adapter, trust_remote_code = True)
 
@@ -60,22 +50,21 @@ model = AutoModelForCausalLM.from_pretrained(
     return_dict=True,
     torch_dtype=torch.bfloat16,
     device_map="cuda",
+    # use_flash_attention_2 = True,
     **kwargs,
 )
 
-model.add_adapter(books_config, "books_adapter")
-# model.add_adapter(oasst_config, "oasst_adapter")
-# model.add_adapter(qns_config, "qns_adapter")
-# SET BOOKS ADAPTER BY DEFAULT
-model.set_adapter("books_adapter")
+model.load_adapter(books_adapter, "books_adapter")
+model.load_adapter(jeopardy_adapter, "jeopardy_adapter")
+model.load_adapter(dolly_adapter, "dolly_adapter")
+# # SET BOOKS ADAPTER BY DEFAULT
+model.set_adapter("jeopardy_adapter")
 
 model.eval()
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, **kwargs)
-# assert tokenizer is not None
 
 LLAMA2_CONTEXT_LENGTH = 4096
-
 
 
 @app.post("/process")
@@ -83,19 +72,55 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     if input_data.seed is not None:
         torch.manual_seed(input_data.seed)
     
-    
+    # Set QSN ADAPTER FOR CNN
+    # if "Article" in input_data.prompt and "Summarize the above article in " in input_data.prompt:
+    #     input_data.prompt += '\n'
+    #     if model.active_adapter!="qns_adapter":
+    #         model.set_adapter("qns_adapter")
+    # else: # After CNN, for next sets, if the adapter is still QSN_ADAPTER, set if back to BOOKS_ADAPTER
+    #     if model.active_adapter=="qns_adapter":
+    #         model.set_adapter("books_adapter")
+    #Mixed-3
     if "Article:" in input_data.prompt and "Summarize the above article in" in input_data.prompt:
+        #CNN Daily Mail
         input_data.prompt += '\n'
+        model.set_adapter('books_adapter')
     elif not input_data.prompt.endswith('Answer:'):
-        if input_data.prompt.beginswith('The following paragraphs each describe a set of'):
+        if input_data.prompt.startswith('The following paragraphs each describe a set of'):
+            #BigBench
             input_data.prompt += '\nWhich of the above is correct\nAnswer:'
         else:
+            #coding ig?
             input_data.prompt += '\nAnswer:'
-    elif input_data.prompt.beginswith('Given the definition of the op operator, compute the result.'):
+        if model.active_adapter()!='jeopardy_adapter':
+            model.set_adapter('jeopardy_adapter')
+    elif input_data.prompt.startswith('Given the definition of the op operator, compute the result.'):
         input_data.prompt.replace('result','result in a concise manner.')
         input_data.prompt.replace('=','')
-            
-    # assert tokenizer is not None
+        if model.active_adapter()!='dolly_adapter':
+            model.set_adapter('dolly_adapter')
+    
+    elif input_data.prompt.startswith('Q:'):
+        #GSM8k
+        input_data.prompt.replace('Q:','Question:')
+        input_data.prompt.replace('A:','Answer:')
+        if not model.active_adapter()!='jeopardy_adapter':
+            model.set_adapter('jeopardy_adapter')
+    elif input_data.prompt.startswith('Question:') and input_data.prompt.endswith('Answer:'):
+        #MMLU And TruthFulQA
+        if model.active_adapter()!='jeopardy_adapter':
+            model.set_adapter('jeopardy_adapter')
+    elif input_data.prompt.startswith('The following are multiple choice questions (with answers).'):
+        #BBQ
+        if model.active_adapter!='jeopardy_adapter':
+            model.set_adapter('jeopardy_adapter')
+    else:
+        if model.active_adapter()!='dolly_adapter':
+            model.set_adapter('dolly_adapter')
+        
+    
+
+
     encoded = tokenizer(input_data.prompt, return_tensors="pt")
     
     prompt_length = encoded["input_ids"][0].size(0)
@@ -165,5 +190,3 @@ async def tokenize(input_data: TokenizeRequest) -> TokenizeResponse:
     tokens = encoded["input_ids"]
     return TokenizeResponse(tokens=tokens, request_time=t)
 
-if __name__=="__main__":
-    uvicorn.run(app, host="0.0.0.0",port = 8080)

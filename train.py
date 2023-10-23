@@ -24,10 +24,10 @@ model_name = 'Qwen/Qwen-14B'
 output_dir = '/home/datta0/qwen-tiny-textbooks'
 learning_rate = 3e-5
 lr_scheduler_type = "cosine"
-lora_r = 16
-lora_alpha = 32
+lora_r = 8
+lora_alpha = 16
 lora_dropout = 0.1
-gradient_accumulation_steps = 32
+grad_acc_steps = 8
 train_batch_size = 2
 train_size = 100000
 test_size = 1000
@@ -124,25 +124,28 @@ def train_model():
         args = TrainingArguments(
             num_train_epochs=1,
             per_device_train_batch_size=train_batch_size,
-            gradient_accumulation_steps=gradient_accumulation_steps,
+            gradient_accumulation_steps=grad_acc_steps,
             gradient_checkpointing=True,
-            warmup_steps=20,
+            warmup_steps=0.01,
+            # max_steps=50, #20,
             learning_rate=learning_rate,
             lr_scheduler_type=lr_scheduler_type,
             bf16=True,
-            logging_steps=10,
+            logging_steps=0.02,
             output_dir=output_dir,
-            optim="paged_adamw_32bit",
-            save_steps = 10,
+            optim=f"paged_adamw_32bit",
+            save_steps = 0.02,
             save_total_limit=3,
-            # disable_tqdm = False, #Only for notebooks
+            disable_tqdm = False,
+            resume_from_checkpoint=True,
             remove_unused_columns=True,
             evaluation_strategy="steps",
-            eval_steps = 10,
+            eval_steps = 0.02,
+            # eval_accumulation_steps=1,
             per_device_eval_batch_size=train_batch_size,
-            load_best_model_at_end=True,
+            # load_best_model_at_end=True,
             report_to="wandb",
-            run_name=f"qwen-text_r={lora_r}_a={lora_alpha}_gas={gradient_accumulation_steps}_lr={learning_rate}"
+            run_name=output_dir
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer,pad_to_multiple_of=8, return_tensors="pt",mlm=False)
     )
