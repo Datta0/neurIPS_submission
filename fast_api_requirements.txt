@@ -10,4 +10,3 @@ transformers_stream_generator
 einops
 tiktoken
 wandb
-git
