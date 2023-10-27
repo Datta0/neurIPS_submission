@@ -124,8 +124,8 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             model.set_adapter('jeopardy_adapter')
     else:
         #Default
-        if switch_adapters and model.active_adapter()!='oasst_adapter':
-            model.set_adapter('oasst_adapter')
+        if switch_adapters and model.active_adapter()!='dolly_adapter':
+            model.set_adapter('_adapter')
         
     
 

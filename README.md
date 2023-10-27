@@ -1,10 +1,11 @@
 # NeurIPS LLM Efficiency Challenge.
 
 This repo contains my submission for [neurIPS LLM efficiency challenge](https://llm-efficiency-challenge.github.io/).
+There are 3 submissions and each has its own dockerfile (Dockerfile, Dockerfile_2,Dockerfile_3) which run different combinations of adapters on the same model. Please make sure that no other process is consuming GPU while you run this.
 
 ## Info
 - Base Model: [Qwen/Qwen-14B](https://huggingface.co/Qwen/Qwen-14B)
-- Adapters: [imdatta0](https://huggingface.co/imdatta0) [This submission trains multiple adapters and uses them depending on the task at hand.]
+- Adapters: [HuggingFace](https://huggingface.co/imdatta0) [This submission trains multiple adapters and uses them depending on the task at hand.]
 - dtype: bfloat16
 - GPU/Track: A100
 - Datasets: [nampdn-ai/tiny-textbooks](https://huggingface.co/datasets/nampdn-ai/tiny-textbooks)-50k, [OpenAssistant](OpenAssistant/oasst_top1_2023-08-25) ~13k, [jeopardy](https://huggingface.co/datasets/jeopardy) ~50k, [dolly](databricks/databricks-dolly-15k) -15k
@@ -18,6 +19,11 @@ Note: If you want to run training as well, please set the env variable `TRAIN_MO
 To build the Image, run
 ```
 docker build -f Dockerfile -t neurips_inference .
+```
+For 2nd and 3rd submissions, please run
+```
+docker build -f Dockerfile_2 -t neurips_inference .
+docker build -f Dockerfile_3 -t neurips_inference .
 ```
 
 To start the server up and make it ready for inference, run

@@ -39,6 +39,7 @@ books_adapter = 'imdatta0/qwen_books_r16_1e5'
 jeopardy_adapter = 'imdatta0/jeopardy'
 dolly_adapter = 'imdatta0/qwen_databricks_dolly_15k_r16'
 oasst_adapter = 'imdatta0/qwen_oasst_top1_2023_08_25_code_r8_1e5'
+cnn_adapter = 'imdatta0/qwen_cnn_final'
 
 # books_config = PeftConfig.from_pretrained(books_adapter, trust_remote_code = True)
 # oasst_config = PeftConfig.from_pretrained(oasst_adapter, trust_remote_code = True)
@@ -59,11 +60,11 @@ model = AutoModelForCausalLM.from_pretrained(
 model.load_adapter(books_adapter, "books_adapter")
 model.load_adapter(jeopardy_adapter, "jeopardy_adapter")
 model.load_adapter(dolly_adapter, "dolly_adapter")
-# model.load_adapter(cnn_adapter, "cnn_adapter")
+model.load_adapter(cnn_adapter, "cnn_adapter")
 # model.load_adapter(code_adapter, "code_adapter")
 model.load_adapter(oasst_adapter, "oasst_adapter")
 # # # SET BOOKS ADAPTER BY DEFAULT
-model.set_adapter("oasst_adapter")
+model.set_adapter("dolly_adapter")
 switch_adapters = True
 
 model.eval()
@@ -89,8 +90,8 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
         # del kwargs['num_beams']
         input_data.prompt += '\n'
         input_data.prompt = input_data.prompt.replace('Summarize the above article in 3 sentences.','Summarize the above article in under 3 sentences from the article.')
-        if switch_adapters and model.active_adapter()!='books_adapter':
-            model.set_adapter('books_adapter')
+        if switch_adapters and model.active_adapter()!='cnn_adapter':
+            model.set_adapter('cnn_adapter')
     elif not input_data.prompt.endswith('Answer:'):
         if input_data.prompt.startswith('The following paragraphs each describe a set of'):
             #BigBench
@@ -124,8 +125,8 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             model.set_adapter('jeopardy_adapter')
     else:
         #Default
-        if switch_adapters and model.active_adapter()!='oasst_adapter':
-            model.set_adapter('oasst_adapter')
+        if switch_adapters and model.active_adapter()!='dolly_adapter':
+            model.set_adapter('dolly_adapter')
         
     
 
