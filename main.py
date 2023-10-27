@@ -112,8 +112,8 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             model.set_adapter('jeopardy_adapter')
     elif input_data.prompt.startswith('The following are multiple choice questions (with answers) about'):
         #MMLU
-        if switch_adapters and model.active_adapter()!='jeopardy_adapter':
-            model.set_adapter('jeopardy_adapter')
+        if switch_adapters and model.active_adapter()!='oasst_adapter':
+            model.set_adapter('oasst_adapter')
     elif input_data.prompt.startswith('Question:') and input_data.prompt.endswith('Answer:'):
         #TruthFulQA
         if switch_adapters and model.active_adapter()!='jeopardy_adapter':
