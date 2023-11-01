@@ -14,7 +14,7 @@ There are 3 submissions and each has its own dockerfile (Dockerfile, Dockerfile_
 - Approx Training time(if run): 20h
 
 ## How to Run
-Note: If you want to run training as well, please set the env variable `TRAIN_MODEL=true` in [Dockerfile](./Dockerfile) (This currently only does training on tiny-books, adapter for the rest will be added soon)
+Note: If you want to run finetuning as well, please run the train.py file
 
 To build the Image, run
 ```
