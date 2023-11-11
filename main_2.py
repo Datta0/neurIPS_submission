@@ -19,6 +19,8 @@ from api import (
     TokenizeRequest,
     TokenizeResponse,
     Token,
+    DecodeRequest,
+    DecodeResponse
 )
 
 app = FastAPI()
@@ -81,9 +83,9 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     if input_data.seed is not None:
         torch.manual_seed(input_data.seed)
     
-    kwargs = {
-        'num_beams':3
-    }
+    # kwargs = {
+    #     'num_beams':3
+    # }
     #Mixed-4
     if "Article:" in input_data.prompt and "Summarize the above article in" in input_data.prompt:
         #CNN Daily Mail
@@ -134,8 +136,8 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
 
 
     encoded = tokenizer(input_data.prompt, return_tensors="pt")
-    if encoded['input_ids'].shape[-1]>=1024:
-        del kwargs['num_beams']
+    # if encoded['input_ids'].shape[-1]>=1024:
+    #     del kwargs['num_beams']
     
     prompt_length = encoded["input_ids"][0].size(0)
     max_returned_tokens = prompt_length + input_data.max_new_tokens
@@ -155,7 +157,6 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             top_k=input_data.top_k,
             return_dict_in_generate=True,
             output_scores=True,
-            **kwargs
         )
     
     t = time.perf_counter() - t0
@@ -205,3 +206,11 @@ async def tokenize(input_data: TokenizeRequest) -> TokenizeResponse:
     tokens = encoded["input_ids"]
     return TokenizeResponse(tokens=tokens, request_time=t)
 
+@app.post("/decode")
+async def decode(input_data: DecodeRequest) -> DecodeResponse:
+    logger.info(f"Using device: {'GPU'}")
+    t0 = time.perf_counter()
+    # decoded = tokenizer.decode(torch.Tensor(input_data.tokens))
+    decoded = tokenizer.decode(input_data.tokens)
+    t = time.perf_counter() - t0
+    return DecodeResponse(text=decoded, request_time=t)

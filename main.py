@@ -19,6 +19,8 @@ from api import (
     TokenizeRequest,
     TokenizeResponse,
     Token,
+    DecodeRequest,
+    DecodeResponse
 )
 
 app = FastAPI()
@@ -92,6 +94,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
         if switch_adapters and model.active_adapter()!='books_adapter':
             model.set_adapter('books_adapter')
     elif not input_data.prompt.endswith('Answer:'):
+        del kwargs['num_beams']
         if input_data.prompt.startswith('The following paragraphs each describe a set of'):
             #BigBench
             input_data.prompt += '\nWhich of the above is correct\nAnswer:'
@@ -116,6 +119,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             model.set_adapter('oasst_adapter')
     elif input_data.prompt.startswith('Question:') and input_data.prompt.endswith('Answer:'):
         #TruthFulQA
+        del kwargs['num_beams']
         if switch_adapters and model.active_adapter()!='jeopardy_adapter':
             model.set_adapter('jeopardy_adapter')
     elif input_data.prompt.startswith('The following are multiple choice questions (with answers).'):
@@ -124,6 +128,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             model.set_adapter('jeopardy_adapter')
     else:
         #Default
+        del kwargs['num_beams']
         if switch_adapters and model.active_adapter()!='oasst_adapter':
             model.set_adapter('oasst_adapter')
         
@@ -131,7 +136,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
 
 
     encoded = tokenizer(input_data.prompt, return_tensors="pt")
-    if encoded['input_ids'].shape[-1]>=1024:
+    if encoded['input_ids'].shape[-1]>=1024 and 'num_beams' in kwargs:
         del kwargs['num_beams']
     
     prompt_length = encoded["input_ids"][0].size(0)
@@ -202,3 +207,11 @@ async def tokenize(input_data: TokenizeRequest) -> TokenizeResponse:
     tokens = encoded["input_ids"]
     return TokenizeResponse(tokens=tokens, request_time=t)
 
+@app.post("/decode")
+async def decode(input_data: DecodeRequest) -> DecodeResponse:
+    logger.info(f"Using device: {'GPU'}")
+    t0 = time.perf_counter()
+    # decoded = tokenizer.decode(torch.Tensor(input_data.tokens))
+    decoded = tokenizer.decode(input_data.tokens)
+    t = time.perf_counter() - t0
+    return DecodeResponse(text=decoded, request_time=t)
