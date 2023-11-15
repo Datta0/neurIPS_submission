@@ -156,10 +156,9 @@ def train_model(dataset_name,):
     lora_dropout = 0.1
     grad_acc_steps = 8
     train_batch_size = 2
-    output_dir = '/submissions/'
-    output_dir = output_dir+dataset_name.replace('/','_')
+    output_dir = '/submissions/'+dataset_name.replace('/','_')
     if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+        os.makedirs(output_dir,exist_ok=True)
     num_epochs = 1
     
 
@@ -167,7 +166,7 @@ def train_model(dataset_name,):
         lora_r = 8
         lora_alpha = 16
         learning_rate =1e-5
-        train_batch_size = 1
+        train_batch_size = 1    
         grad_acc_steps = 16
         target_modules = ['c_attn','c_proj','w1','w2']
         layers_to_transform = list(range(30,40))
