@@ -23,7 +23,7 @@ device = torch.device('cuda:0')
 model_name = 'Qwen/Qwen-14B'
 
 
-train_size = 50000
+# train_size = 50000
 test_size = 500
 kwargs = {
     # 'cache_dir':'/home/datta0/.cache/huggingface/hub'
@@ -99,13 +99,17 @@ def get_token_len(sample):
 
 def load_dataset_sorted(tokenizer,name):
     # Randomly shuffle and choose only 60k sample. We train on 50k and eval on 1k. Rest are buffer
+    train_size = 100000
     if name=='nampdn-ai/tiny-textbooks':
+        train_size = 100000
         dataset = load_dataset(name,split='train').shuffle().select(list(range(1,int(train_size*1.2))))
     elif name=='databricks/databricks-dolly-15k':
         dataset = load_dataset(name,split='train').map(create_prompt)
     elif name=='cnn_dailymail':
+        train_size = 100000
         dataset = load_dataset(name,'3.0.0',split='train').shuffle().select(list(range(1,int(train_size*1.2)))).map(create_cnn_prompt)
     elif name=='jeopardy':
+        train_size = 80000
         dataset = load_dataset(name,split='train').shuffle().select(list(range(1,int(train_size*1.2)))).map(create_jeopardy_prompt)
     elif name=='OpenAssistant/oasst_top1_2023-08-25':
         dataset = load_dataset(name,split='train')
@@ -143,24 +147,63 @@ def train_model(dataset_name,):
     train_batch_size = 2
     output_dir = '/home/datta0/submissions/'
     output_dir = output_dir+dataset_name.replace('/','_')
-    
-    
-    if dataset_name=='cnn_dailymail' or dataset_name=='OpenAssistant/oasst_top1_2023-08-25':
-        learning_rate = 1e-5
-    if dataset_name=='jeopardy' or dataset_name=='OpenAssistant/oasst_top1_2023-08-25':
-        lora_r = 8
-        lora_alpha = 16
-    if dataset_name=='databricks/databricks-dolly-15k':
-        learning_rate = 3e-4
+    num_epochs = 1
     
 
+    if dataset_name=='cnn_dailymail':
+        lora_r = 8
+        lora_alpha = 16
+        learning_rate =1e-5
+        train_batch_size = 1
+        grad_acc_steps = 16
+        target_modules = ['c_attn','c_proj','w1','w2']
+        layers_to_transform = list(range(30,40))
+    
+    if dataset_name=='jeopardy':
+        lora_r = 8
+        lora_alpha = 16
+        learning_rate =1e-4
+        train_batch_size = 2
+        grad_acc_steps = 8
+        target_modules = ['c_attn','c_proj']
+        layers_to_transform = list(range(30,40))
+    
+    if dataset_name=='databricks/databricks-dolly-15k':
+        lora_r = 8
+        lora_alpha = 16
+        learning_rate =1e-5
+        train_batch_size = 1
+        grad_acc_steps = 16
+        target_modules = ['c_attn','c_proj','w1','w2']
+        layers_to_transform = list(range(30,40))
+    
+    if dataset_name=='OpenAssistant/oasst_top1_2023-08-25':
+        lora_r = 8
+        lora_alpha = 16
+        learning_rate =1e-5
+        train_batch_size = 1
+        grad_acc_steps = 64
+        target_modules = ['c_attn','c_proj','w1','w2']
+        layers_to_transform = list(range(30,40))
+        num_epochs = 2
+
+    if dataset_name=='nampdn-ai/tiny-textbooks':
+        lora_r = 16
+        lora_alpha = 32
+        learning_rate =1e-5
+        train_batch_size = 1
+        grad_acc_steps = 8
+        target_modules = ['c_attn','c_proj','w1','w2']
+        layers_to_transform = list(range(0,40))
+
+    
     print(f'Training the model. Will save later to {output_dir}')
     
     lora_config = LoraConfig(
         r = lora_r,
         lora_alpha=lora_alpha,
-        target_modules=["c_attn",'c_proj'],
-        layers_to_transform=list(range(30,40)),
+        target_modules=target_modules,
+        layers_to_transform=layers_to_transform,
         lora_dropout=0.1,
         bias = "none",
         task_type = "CAUSAL_LM"
@@ -175,7 +218,7 @@ def train_model(dataset_name,):
         eval_dataset = eval_data,
         tokenizer = tokenizer,
         args = TrainingArguments(
-            num_train_epochs=1,
+            num_train_epochs=num_epochs,
             per_device_train_batch_size=train_batch_size,
             gradient_accumulation_steps=grad_acc_steps,
             gradient_checkpointing=True,
@@ -199,7 +242,8 @@ def train_model(dataset_name,):
             per_device_eval_batch_size=train_batch_size,
             # load_best_model_at_end=True,
             report_to="wandb",
-            run_name=f'{output_dir}'
+            run_name=f"{output_dir}",
+            push_to_hub=True,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer,pad_to_multiple_of=8, return_tensors="pt",mlm=False)
     )
@@ -209,7 +253,7 @@ def train_model(dataset_name,):
     with torch.cuda.amp.autocast(enabled=True, dtype = torch.bfloat16):
         trainer.train()
 
-    trainer.push_to_hub(f'qwen-{dataset_name}')
+    trainer.push_to_hub(f'qwen-rep-{dataset_name}')
     return True
 
 

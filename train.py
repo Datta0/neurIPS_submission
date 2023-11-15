@@ -7,3 +7,4 @@ os.environ['WANDB_PROJECT']='neurips_submission'
 for dataset in ['OpenAssistant/oasst_top1_2023-08-25','databricks/databricks-dolly-15k','jeopardy','nampdn-ai/tiny-textbooks']:
     print(f'Training for dataset {dataset}')
     train_model(dataset)
+    print(f'Finshed training for dataset {dataset}')
