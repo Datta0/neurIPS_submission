@@ -8,13 +8,27 @@ There are 3 submissions and each has its own dockerfile (Dockerfile, Dockerfile_
 - Adapters: [HuggingFace](https://huggingface.co/imdatta0) [This submission trains multiple adapters and uses them depending on the task at hand.]
 - dtype: bfloat16
 - GPU/Track: A100
-- Datasets: [nampdn-ai/tiny-textbooks](https://huggingface.co/datasets/nampdn-ai/tiny-textbooks)-50k, [OpenAssistant](OpenAssistant/oasst_top1_2023-08-25) ~13k, [jeopardy](https://huggingface.co/datasets/jeopardy) ~50k, [dolly](databricks/databricks-dolly-15k) -15k
-- Training Samples: 125,000
+- Datasets: [nampdn-ai/tiny-textbooks](https://huggingface.co/datasets/nampdn-ai/tiny-textbooks)-80k, [OpenAssistant](OpenAssistant/oasst_top1_2023-08-25) ~13k, [jeopardy](https://huggingface.co/datasets/jeopardy) ~80k, [dolly](databricks/databricks-dolly-15k) -15k, [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail/viewer/3.0.0) (only train split and 100k randomly chosen) ~80k
+
+- Training Samples: <200,000
 - Eval Samples: 1000
 - Approx Training time(if run): 20h
 
 ## How to Run
-Note: If you want to run finetuning as well, please run the train.py file
+Note: If you want to run finetuning as well, follow:
+To build the Image, run
+```
+docker build -f Dockerfile.train -t neurips_train .
+```
+To run the finetuning (tunes multiple adapters with diff configs on diff datasets, might take close to 20h)
+```
+docker run -v --gpus "device=0" -p 8080:80 --rm -ti neurips_train
+```
+Note: The submission that looks to have qualified is the 2nd one. That doesn't need to train books_adapter. The other two submissions (1 and 3) have better scores in many scenarios but unfortunately, have a few `NULL` for a couple of datasets. Those submissions do make use of books_adapter. If you want to train books_adapter, set `TRAIN_BOOKS` in Dockerfile.train to `true`. The reason behind those `NULL` *might*  be beam search.
+For 2nd submission, the training runs under 24h (without `books_adapter`). 
+For 1st and 3rd submission, training runs under 24h cuz they don't use `cnn_adapter`. Its basically a 1-1 swap. 
+
+
 
 To build the Image, run
 ```

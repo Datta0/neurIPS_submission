@@ -112,12 +112,12 @@ def load_dataset_sorted(tokenizer,name):
     # Randomly shuffle and choose only 60k sample. We train on 50k and eval on 1k. Rest are buffer
     train_size = 100000
     if name=='nampdn-ai/tiny-textbooks':
-        train_size = 100000
+        train_size = 80000
         dataset = load_dataset(name,split='train').shuffle().select(list(range(1,int(train_size*1.2))))
     elif name=='databricks/databricks-dolly-15k':
         dataset = load_dataset(name,split='train').map(create_dolly_prompt).filter(lambda x:len(x['text'].split(' '))>10)
     elif name=='cnn_dailymail':
-        train_size = 100000
+        train_size = 80000
         dataset = load_dataset(name,'3.0.0',split='train').shuffle().select(list(range(1,int(train_size*1.2)))).map(create_cnn_prompt)
     elif name=='jeopardy':
         train_size = 80000
@@ -198,7 +198,6 @@ def train_model(dataset_name,):
         grad_acc_steps = 16
         target_modules = ['c_proj']
         layers_to_transform = list(range(30,40))
-        num_epochs = 2
 
     if dataset_name=='nampdn-ai/tiny-textbooks':
         lora_r = 16

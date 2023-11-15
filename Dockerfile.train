@@ -14,7 +14,7 @@ ENV HUGGINGFACE_TOKEN="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"
 # ENV HUGGINGFACE_REPO="imdatta0/qwen-oasst"
 ENV WANDB_API_KEY='1663281c6220a7c530453cbf8d51869cd0e95580'
 ENV WANDB_PROJECT='neurips_submission'
-ENV TRAIN_MODEL=false
+ENV TRAIN_BOOKS=false
 
 #Login to Huggingfacehub
 RUN echo "Logging in to Huggingfacehub"
