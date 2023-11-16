@@ -3,7 +3,7 @@ import os
 
 os.environ['HUGGINGFACE_TOKEN']="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"
 os.environ['WANDB_API_KEY']='1663281c6220a7c530453cbf8d51869cd0e95580'
-os.environ['WANDB_PROJECT']='neurips_submission'
+os.environ['WANDB_PROJECT']='neurips_submission_final'
 train_books = os.environ.get("TRAIN_BOOKS", "False").lower() == "true"
 
 for dataset in ['databricks/databricks-dolly-15k','cnn_dailymail','OpenAssistant/oasst_top1_2023-08-25','jeopardy','nampdn-ai/tiny-textbooks']:

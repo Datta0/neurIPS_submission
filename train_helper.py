@@ -254,7 +254,7 @@ def train_model(dataset_name,):
             # load_best_model_at_end=True,
             report_to="wandb",
             run_name=f"{output_dir}",
-            # push_to_hub=True,
+            push_to_hub=True,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer,pad_to_multiple_of=8, return_tensors="pt",mlm=False)
     )
