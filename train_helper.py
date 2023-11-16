@@ -156,9 +156,10 @@ def train_model(dataset_name,):
     lora_dropout = 0.1
     grad_acc_steps = 8
     train_batch_size = 2
-    output_dir = '/submissions/'+'final'+dataset_name.replace('/','_')
+    output_dir = '/home/supriyar/datta0/neurIPS_submission'+'/final_'+dataset_name.replace('/','_')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir,exist_ok=True)
+    run_name = output_dir.replace('/','_')
     num_epochs = 1
     
 
@@ -253,7 +254,7 @@ def train_model(dataset_name,):
             per_device_eval_batch_size=train_batch_size,
             # load_best_model_at_end=True,
             report_to="wandb",
-            run_name=f"{output_dir}",
+            run_name=run_name,
             push_to_hub=True,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer,pad_to_multiple_of=8, return_tensors="pt",mlm=False)
