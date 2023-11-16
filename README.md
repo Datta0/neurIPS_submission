@@ -22,7 +22,7 @@ docker build -f Dockerfile.train -t neurips_train .
 ```
 To run the finetuning (tunes multiple adapters with diff configs on diff datasets, might take close to 20h)
 ```
-docker run -v --gpus "device=0" -p 8080:80 --rm -ti neurips_train
+docker run --gpus "device=0" -p 8080:80 --rm -ti neurips_train
 ```
 Note: The submission that looks to have qualified is the 2nd one. That doesn't need to train books_adapter. The other two submissions (1 and 3) have better scores in many scenarios but unfortunately, have a few `NULL` for a couple of datasets. Those submissions do make use of books_adapter. If you want to train books_adapter, set `TRAIN_BOOKS` in Dockerfile.train to `true`. The reason behind those `NULL` *might*  be beam search.
 For 2nd submission, the training runs under 24h (without `books_adapter`). 

@@ -156,7 +156,7 @@ def train_model(dataset_name,):
     lora_dropout = 0.1
     grad_acc_steps = 8
     train_batch_size = 2
-    output_dir = '/submissions/'+dataset_name.replace('/','_')
+    output_dir = '/submissions/'+'final'+dataset_name.replace('/','_')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir,exist_ok=True)
     num_epochs = 1
@@ -254,7 +254,7 @@ def train_model(dataset_name,):
             # load_best_model_at_end=True,
             report_to="wandb",
             run_name=f"{output_dir}",
-            push_to_hub=True,
+            # push_to_hub=True,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer,pad_to_multiple_of=8, return_tensors="pt",mlm=False)
     )
@@ -264,7 +264,7 @@ def train_model(dataset_name,):
     with torch.cuda.amp.autocast(enabled=True, dtype = torch.bfloat16):
         trainer.train()
 
-    trainer.push_to_hub(f'qwen-rep-{dataset_name}')
+    trainer.push_to_hub(f'qwen-final-{dataset_name}')
     return True
 
 
