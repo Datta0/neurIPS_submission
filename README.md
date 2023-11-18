@@ -28,7 +28,14 @@ Note: The submission that looks to have qualified is the 2nd one. That doesn't n
 For 2nd submission, the training runs under 24h (without `books_adapter`). 
 For 1st and 3rd submission, training runs under 24h cuz they don't use `cnn_adapter`. Its basically a 1-1 swap. 
 
-
+To run the inference with new artifacts, build the image using
+```
+docker build -f Dockerfile.final -t neurips_repro .
+```
+And run the same image using
+```
+docker run --gpus "device=0" -p 8080:80 --rm -ti neurips_repro
+```
 
 To build the Image, run
 ```
